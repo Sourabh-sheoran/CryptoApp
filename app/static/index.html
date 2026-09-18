@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CryptoPulse AI — AI Crypto Tracking & Price Prediction Platform</title>
+  <meta name="description" content="AI-Powered Cryptocurrency Market Analytics, XGBoost Price Predictions, and Real-time Paper Trading Simulator.">
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+  <!-- Top Global Bar -->
+  <div class="global-bar">
+    <div class="global-bar-inner">
+      <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+        <div class="stat-pill">
+          <span>Cryptos:</span>
+          <span class="stat-val" id="global-cryptos">14,280</span>
+        </div>
+        <div class="stat-pill">
+          <span>Market Cap:</span>
+          <span class="stat-val" id="global-mcap">$3.25T</span>
+        </div>
+        <div class="stat-pill">
+          <span>24h Vol:</span>
+          <span class="stat-val" id="global-vol">$128.4B</span>
+        </div>
+        <div class="stat-pill">
+          <span>BTC Dominance:</span>
+          <span class="stat-val" id="global-btc-dom">58.4%</span>
+        </div>
+      </div>
+      <div class="stat-pill">
+        <span>Sentiment:</span>
+        <span class="stat-val badge-positive" id="global-sentiment">72 (Greed)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main App Header -->
+  <header>
+    <div class="header-inner">
+      <div class="logo-wrap" onclick="switchTab('markets')">
+        <div class="logo-icon">⚡</div>
+        <div class="logo-text">
+          <h1>CryptoPulse <span style="color: #6366f1;">AI</span></h1>
+          <span class="logo-badge">PRO v2.0</span>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="nav-tabs">
+        <button class="nav-tab active" data-tab="markets" onclick="switchTab('markets')">
+          <span>📊</span> Markets
+        </button>
+        <button class="nav-tab" data-tab="predictions" onclick="switchTab('predictions')">
+          <span>🧠</span> AI Predictor
+        </button>
+        <button class="nav-tab" data-tab="charts" onclick="switchTab('charts')">
+          <span>📈</span> Charts
+        </button>
+        <button class="nav-tab" data-tab="portfolio" onclick="switchTab('portfolio')">
+          <span>💼</span> Portfolio
+        </button>
+        <button class="nav-tab" data-tab="watchlist" onclick="switchTab('watchlist')">
+          <span>⭐</span> Watchlist
+        </button>
+      </nav>
+
+      <!-- Header Right -->
+      <div class="header-right">
+        <select class="currency-select" id="currency-picker" onchange="onCurrencyChange()">
+          <option value="usd" selected>USD ($)</option>
+          <option value="inr">INR (₹)</option>
+          <option value="eur">EUR (€)</option>
+        </select>
+
+        <div id="auth-actions-wrap">
+          <button class="btn btn-primary btn-sm" onclick="openAuthModal('login')">Sign In</button>
+          <button class="btn btn-ghost btn-sm" onclick="openAuthModal('register')">Register</button>
+        </div>
+
+        <div id="user-profile-wrap" style="display: none;">
+          <div class="user-profile-pill">
+            <div class="user-avatar" id="user-avatar-initial">U</div>
+            <div class="user-info">
+              <span class="user-name" id="user-name-display">Trader</span>
+              <span class="user-balance" id="user-balance-display">$50,000.00</span>
+            </div>
+            <button class="btn btn-ghost btn-sm" style="padding: 3px 8px; margin-left: 6px;" onclick="logoutUser()" title="Logout">✕</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Body Content -->
+  <main>
+
+    <!-- TAB 1: MARKETS -->
+    <section id="tab-markets" class="tab-content active">
+      <div class="market-stats-row">
+        <div class="stat-card">
+          <div class="stat-icon-wrap" style="background: rgba(99, 102, 241, 0.15); color: #818cf8;">🔥</div>
+          <div>
+            <div style="font-size: 12px; color: var(--text-dim); font-weight: 600;">Top Gainer (24h)</div>
+            <div style="font-size: 17px; font-weight: 700;" id="stat-top-gainer">SUI (+8.9%)</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon-wrap" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">💰</div>
+          <div>
+            <div style="font-size: 12px; color: var(--text-dim); font-weight: 600;">Bitcoin Price</div>
+            <div style="font-size: 17px; font-weight: 700;" id="stat-btc-price">$96,450.00</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon-wrap" style="background: rgba(6, 182, 212, 0.15); color: #22d3ee;">💎</div>
+          <div>
+            <div style="font-size: 12px; color: var(--text-dim); font-weight: 600;">Ethereum Price</div>
+            <div style="font-size: 17px; font-weight: 700;" id="stat-eth-price">$2,780.00</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon-wrap" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">⚡</div>
+          <div>
+            <div style="font-size: 12px; color: var(--text-dim); font-weight: 600;">Fear & Greed</div>
+            <div style="font-size: 17px; font-weight: 700;" id="stat-fng-index">72 / 100</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div class="table-controls">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="market-search-input" placeholder="Search cryptocurrency (e.g. BTC, Solana)..." oninput="filterMarketTable()">
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-ghost btn-sm" onclick="filterCategory('all')">All Coins</button>
+          <button class="btn btn-ghost btn-sm" onclick="filterCategory('gainers')">🟢 Top Gainers</button>
+          <button class="btn btn-ghost btn-sm" onclick="filterCategory('losers')">🔴 Top Losers</button>
+          <button class="btn btn-primary btn-sm" onclick="fetchMarketData()">🔄 Refresh</button>
+        </div>
+      </div>
+
+      <!-- Market Table -->
+      <div class="table-wrap">
+        <table class="crypto-table">
+          <thead>
+            <tr>
+              <th style="width: 40px;">#</th>
+              <th>Asset</th>
+              <th>Price</th>
+              <th>24h Change</th>
+              <th>24h High / Low</th>
+              <th>24h Volume</th>
+              <th>Market Cap</th>
+              <th style="text-align: right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="market-table-body">
+            <!-- Rendered by JS -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- TAB 2: AI PRICE PREDICTION -->
+    <section id="tab-predictions" class="tab-content">
+      <div class="prediction-layout">
+        
+        <!-- Left: Model Form & Controls -->
+        <div class="glass-card">
+          <div class="card-header">
+            <h2 class="card-title"><span>🧠</span> AI Model Config</h2>
+          </div>
+          <div class="form-group">
+            <label>Select Cryptocurrency Ticker</label>
+            <input type="text" id="predict-symbol-input" class="form-input mono" value="BTC-USD" placeholder="e.g. BTC-USD, ETH-USD, SOL-USD">
+            <div class="quick-tickers">
+              <span class="ticker-chip" onclick="setPredictTicker('BTC-USD')">BTC</span>
+              <span class="ticker-chip" onclick="setPredictTicker('ETH-USD')">ETH</span>
+              <span class="ticker-chip" onclick="setPredictTicker('SOL-USD')">SOL</span>
+              <span class="ticker-chip" onclick="setPredictTicker('BNB-USD')">BNB</span>
+              <span class="ticker-chip" onclick="setPredictTicker('DOGE-USD')">DOGE</span>
+              <span class="ticker-chip" onclick="setPredictTicker('XRP-USD')">XRP</span>
+              <span class="ticker-chip" onclick="setPredictTicker('AVAX-USD')">AVAX</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Forecast Horizon</label>
+            <select id="predict-days-select" class="form-select">
+              <option value="7" selected>7 Days Ahead</option>
+              <option value="14">14 Days Ahead</option>
+              <option value="30">30 Days Ahead</option>
+              <option value="3">3 Days Ahead</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>ML Algorithm Ensemble</label>
+            <select class="form-select" disabled>
+              <option selected>XGBoost Regressor + Multi-lag Ensembles</option>
+            </select>
+            <p style="font-size: 11px; color: var(--text-dim); margin-top: 4px;">Features: 14-period RSI, MACD, 20/50 SMA, Bollinger Bands, Volume, Price Momentum.</p>
+          </div>
+
+          <button id="run-predict-btn" class="btn btn-primary" style="width: 100%; margin-top: 10px;" onclick="runAIPrediction()">
+            <span>⚡</span> Train & Predict Prices
+          </button>
+        </div>
+
+        <!-- Right: AI Prediction Results & Forecast Chart -->
+        <div class="glass-card" id="predict-results-panel">
+          <div class="card-header">
+            <h2 class="card-title"><span>📊</span> Machine Learning Forecast & Signals</h2>
+            <div id="ai-signal-badge-container">
+              <span class="ai-signal-badge signal-STRONG_BUY" id="ai-signal-badge">ANALYZING...</span>
+            </div>
+          </div>
+
+          <!-- Forecast Summary Grid -->
+          <div class="forecast-grid">
+            <div class="forecast-card">
+              <div class="lbl">Current Price</div>
+              <div class="val mono" id="pred-current-price">$0.00</div>
+            </div>
+            <div class="forecast-card">
+              <div class="lbl">Predicted Next Close</div>
+              <div class="val mono" id="pred-next-close" style="color: var(--emerald);">$0.00</div>
+            </div>
+            <div class="forecast-card">
+              <div class="lbl">Expected % Change</div>
+              <div class="val mono" id="pred-pct-change">+0.0%</div>
+            </div>
+            <div class="forecast-card">
+              <div class="lbl">Model Confidence (R²)</div>
+              <div class="val mono" id="pred-confidence">96.4%</div>
+            </div>
+            <div class="forecast-card">
+              <div class="lbl">Next Day Range (H/L)</div>
+              <div class="val mono" id="pred-high-low">$0 / $0</div>
+            </div>
+          </div>
+
+          <!-- Chart Container -->
+          <div style="height: 280px; position: relative; margin: 16px 0;">
+            <canvas id="predictionChart"></canvas>
+          </div>
+
+          <!-- Technical & Reasoning breakdown -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 18px;">
+            <div>
+              <h3 style="font-size: 13px; font-weight: 700; margin-bottom: 8px; color: var(--text-muted);">AI Reasoning & Signals</h3>
+              <div id="ai-reasons-list">
+                <!-- Injected via JS -->
+              </div>
+            </div>
+            <div>
+              <h3 style="font-size: 13px; font-weight: 700; margin-bottom: 8px; color: var(--text-muted);">Technical Levels & RMSE</h3>
+              <div id="technical-stats-list">
+                <!-- Injected via JS -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- TAB 3: TECHNICAL CHARTS -->
+    <section id="tab-charts" class="tab-content">
+      <div class="glass-card">
+        <div class="card-header">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <select class="form-select mono" id="chart-coin-select" style="width: 200px;" onchange="loadTechnicalChart()">
+              <option value="bitcoin" selected>Bitcoin (BTC)</option>
+              <option value="ethereum">Ethereum (ETH)</option>
+              <option value="solana">Solana (SOL)</option>
+              <option value="binancecoin">BNB (BNB)</option>
+              <option value="ripple">XRP (XRP)</option>
+              <option value="cardano">Cardano (ADA)</option>
+              <option value="dogecoin">Dogecoin (DOGE)</option>
+              <option value="avalanche-2">Avalanche (AVAX)</option>
+              <option value="chainlink">Chainlink (LINK)</option>
+              <option value="sui">Sui (SUI)</option>
+            </select>
+            <span id="chart-price-banner" style="font-size: 20px; font-weight: 800;" class="mono">$0.00</span>
+          </div>
+          <div style="display: flex; gap: 4px;">
+            <button class="btn btn-ghost btn-sm" onclick="setChartDays('1')">24H</button>
+            <button class="btn btn-ghost btn-sm" onclick="setChartDays('7')">7D</button>
+            <button class="btn btn-ghost btn-sm active" onclick="setChartDays('30')">30D</button>
+            <button class="btn btn-ghost btn-sm" onclick="setChartDays('90')">90D</button>
+            <button class="btn btn-ghost btn-sm" onclick="setChartDays('365')">1Y</button>
+          </div>
+        </div>
+
+        <div style="height: 440px; position: relative;">
+          <canvas id="marketChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: PORTFOLIO & PAPER TRADING -->
+    <section id="tab-portfolio" class="tab-content">
+      <div id="portfolio-guest-notice" class="glass-card" style="text-align: center; padding: 40px; display: none;">
+        <h2 style="font-size: 22px; font-weight: 800; margin-bottom: 8px;">💼 Paper Trading & Portfolio Simulator</h2>
+        <p style="color: var(--text-muted); max-width: 500px; margin: 0 auto 20px;">
+          Log in or create a free account to receive <strong>$50,000 USD virtual trading capital</strong>. Test your trading strategies risk-free with live market prices!
+        </p>
+        <button class="btn btn-primary" onclick="openAuthModal('register')">Create Free Account & Claim $50k</button>
+      </div>
+
+      <div id="portfolio-user-view" style="display: none;">
+        <div class="market-stats-row">
+          <div class="stat-card">
+            <div class="stat-icon-wrap" style="background: rgba(99, 102, 241, 0.15); color: #818cf8;">💵</div>
+            <div>
+              <div style="font-size: 12px; color: var(--text-dim); font-weight: 600;">Virtual Cash Available</div>
+              <div style="font-size: 18px; font-weight: 800;" class="mono" id="port-cash">$50,000.00</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon-wrap" style="background: rgba(6, 182, 212, 0.15); color: #22d3ee;">🪙</div>
+            <div>
+              <div style="font-size: 12px; color: var(--text-dim); font-weight: 600;">Crypto Holdings Value</div>
+              <div style="font-size: 18px; font-weight: 800;" class="mono" id="port-crypto-val">$0.00</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon-wrap" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">📈</div>
+            <div>
+              <div style="font-size: 12px; color: var(--text-dim); font-weight: 600;">Total Net Worth</div>
+              <div style="font-size: 18px; font-weight: 800;" class="mono" id="port-net-worth">$50,000.00</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon-wrap" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">🎯</div>
+            <div>
+              <div style="font-size: 12px; color: var(--text-dim); font-weight: 600;">Total Profit / Loss</div>
+              <div style="font-size: 18px; font-weight: 800;" class="mono" id="port-pnl">$0.00 (0.0%)</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin: 20px 0 14px;">
+          <h2 style="font-size: 18px; font-weight: 700;">Active Holdings</h2>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-emerald btn-sm" onclick="openTradeModal('bitcoin', 'btc', 'Bitcoin', 96450, 'BUY')">➕ Buy Crypto</button>
+            <button class="btn btn-ghost btn-sm" onclick="resetPortfolioBalance()">🔄 Reset Balance ($50k)</button>
+          </div>
+        </div>
+
+        <div class="table-wrap" style="margin-bottom: 24px;">
+          <table class="crypto-table">
+            <thead>
+              <tr>
+                <th>Asset</th>
+                <th>Quantity</th>
+                <th>Avg Buy Price</th>
+                <th>Current Price</th>
+                <th>Total Value</th>
+                <th>Profit / Loss</th>
+                <th style="text-align: right;">Trade</th>
+              </tr>
+            </thead>
+            <tbody id="portfolio-holdings-body">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Transactions Ledger -->
+        <h2 style="font-size: 18px; font-weight: 700; margin-bottom: 14px;">Recent Order Execution History</h2>
+        <div class="table-wrap">
+          <table class="crypto-table">
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Asset</th>
+                <th>Quantity</th>
+                <th>Execution Price</th>
+                <th>Total Value</th>
+                <th>Date & Time</th>
+              </tr>
+            </thead>
+            <tbody id="portfolio-transactions-body">
+              <!-- Injected by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: WATCHLIST -->
+    <section id="tab-watchlist" class="tab-content">
+      <div class="card-header" style="margin-bottom: 14px;">
+        <h2 class="card-title"><span>⭐</span> Your Starred Cryptocurrencies</h2>
+      </div>
+      <div id="watchlist-empty-msg" class="glass-card" style="text-align: center; padding: 30px; display: none;">
+        <p style="color: var(--text-muted);">You have no starred coins yet. Star any coin from the <strong>Markets</strong> tab to track it here!</p>
+      </div>
+      <div class="table-wrap" id="watchlist-table-wrap">
+        <table class="crypto-table">
+          <thead>
+            <tr>
+              <th>Asset</th>
+              <th>Price</th>
+              <th>24h Change</th>
+              <th>24h High / Low</th>
+              <th>Market Cap</th>
+              <th style="text-align: right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="watchlist-table-body">
+            <!-- Injected by JS -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- AUTH MODAL (Login / Register) -->
+  <div class="modal-backdrop" id="auth-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2 style="font-size: 18px; font-weight: 700;" id="auth-modal-title">Sign In to CryptoPulse</h2>
+        <button class="close-btn" onclick="closeAuthModal()">✕</button>
+      </div>
+
+      <div style="display: flex; gap: 8px; margin-bottom: 18px;">
+        <button id="auth-tab-login" class="btn btn-ghost btn-sm" style="flex: 1;" onclick="setAuthMode('login')">Sign In</button>
+        <button id="auth-tab-register" class="btn btn-ghost btn-sm" style="flex: 1;" onclick="setAuthMode('register')">Register</button>
+      </div>
+
+      <form id="auth-form" onsubmit="handleAuthSubmit(event)">
+        <div class="form-group" id="auth-name-group" style="display: none;">
+          <label>Your Name</label>
+          <input type="text" id="auth-name" class="form-input" placeholder="e.g. Sourabh Sheoran">
+        </div>
+
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="auth-email" class="form-input" placeholder="trader@example.com" required>
+        </div>
+
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="auth-password" class="form-input" placeholder="••••••••" required>
+        </div>
+
+        <button type="submit" id="auth-submit-btn" class="btn btn-primary" style="width: 100%; margin-top: 10px;">
+          Sign In
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- TRADE MODAL (Buy / Sell) -->
+  <div class="modal-backdrop" id="trade-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2 style="font-size: 18px; font-weight: 700;" id="trade-modal-title">Buy Bitcoin (BTC)</h2>
+        <button class="close-btn" onclick="closeTradeModal()">✕</button>
+      </div>
+
+      <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+        <button id="trade-tab-buy" class="btn btn-emerald btn-sm" style="flex: 1;" onclick="setTradeType('BUY')">Buy</button>
+        <button id="trade-tab-sell" class="btn btn-ghost btn-sm" style="flex: 1;" onclick="setTradeType('SELL')">Sell</button>
+      </div>
+
+      <div class="form-group">
+        <label>Current Market Price (USD)</label>
+        <input type="text" id="trade-price-display" class="form-input mono" readonly>
+      </div>
+
+      <div class="form-group">
+        <label>Order Quantity</label>
+        <input type="number" id="trade-quantity-input" class="form-input mono" step="any" min="0.0001" placeholder="0.5" oninput="calculateTradeTotal()">
+      </div>
+
+      <div class="form-group">
+        <label>Total Order Cost (USD)</label>
+        <input type="text" id="trade-total-display" class="form-input mono" value="$0.00" readonly>
+      </div>
+
+      <div id="trade-balance-hint" style="font-size: 12px; color: var(--text-dim); margin-bottom: 16px;">
+        Available Cash: $50,000.00
+      </div>
+
+      <button id="trade-execute-btn" class="btn btn-emerald" style="width: 100%;" onclick="executeTradeOrder()">
+        Confirm Buy Order
+      </button>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container"></div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

@@ -25,3 +25,21 @@ logs/
 # Dependency lock files
 package-lock.json
 yarn.lock
+
+# Python
+venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Databases & local state
+*.db
+*.sqlite3
+cryptoapp.db
+
+# Environment
+.env
+.env.local
